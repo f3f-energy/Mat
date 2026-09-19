@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F3F Gestão - Cotação Unificada</title>
+    <style>
+        :root {
+            --primary: #5A189A;
+            --primary-dark: #3C096C;
+            --accent: #FFD700;
+            --dark: #10002B;
+            --light: #F8F9FA;
+            --success: #28a745;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--light); color: #333; line-height: 1.6; }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: white; padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .logo { font-size: 1.8rem; font-weight: 800; }
+        .logo span { color: var(--accent); }
+
+        .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+
+        /* Form do Cliente */
+        .user-info-card {
+            background: white; border-radius: 12px; padding: 1.8rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 2rem;
+            border-top: 5px solid var(--accent);
+        }
+        .user-info-card h2 { color: var(--primary-dark); font-size: 1.3rem; margin-bottom: 1rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+        
+        input, select, textarea {
+            width: 100%; padding: 0.8rem; border: 1px solid #CCC; border-radius: 8px; font-size: 1rem;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+
+        /* Botões dos Pilares */
+        .section-title { text-align: center; color: var(--primary-dark); margin-bottom: 1.5rem; }
+        .pilar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        
+        .pilar-btn {
+            background: white; border: 2px solid var(--primary); color: var(--primary-dark);
+            padding: 1.2rem 0.8rem; border-radius: 12px; font-weight: bold; cursor: pointer;
+            text-align: center; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+        }
+        .pilar-btn.disabled { opacity: 0.5; cursor: not-allowed; border-color: #CCC; color: #888; }
+        .pilar-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .pilar-btn:not(.disabled):hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(90, 24, 154, 0.2); }
+        .pilar-icon { font-size: 2rem; }
+
+        /* Telas de Cotação Dinâmicas */
+        .cotacao-box {
+            display: none; background: white; border-radius: 12px; padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 2rem; border-left: 6px solid var(--primary);
+        }
+        .cotacao-box.active { display: block; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn-add {
+            background: var(--primary-dark); color: white; padding: 0.8rem 1.5rem; border: none;
+            border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 1rem;
+        }
+        .btn-add:hover { background: var(--primary); }
+
+        /* Resumo do Pedido */
+        .summary-card {
+            background: #10002B; color: white; border-radius: 12px; padding: 2rem; text-align: center;
+        }
+        .summary-card h3 { color: var(--accent); margin-bottom: 1rem; }
+        .summary-list { text-align: left; margin: 1rem 0; padding-left: 1.5rem; }
+
+        .btn-whatsapp {
+            background: #25D366; color: white; border: none; padding: 1rem 2rem; border-radius: 30px;
+            font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; max-width: 400px;
+            transition: 0.3s; display: inline-block; text-decoration: none;
+        }
+        .btn-whatsapp:hover { background: #1eb954; transform: scale(1.02); }
+
+        .alert-msg { color: #d9534f; font-size: 0.85rem; margin-top: 0.5rem; display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">F3F <span>GESTÃO</span></div>
+        <div style="font-size: 0.9rem; font-weight: 600;">Especialistas em Energia</div>
+    </header>
+
+    <div class="container">
+
+        <!-- ETAPA 1: Dados do Cliente -->
+        <div class="user-info-card">
+            <h2>1. Seus Dados para Cotação</h2>
+            <div class="form-grid">
+                <div>
+                    <input type="text" id="cliente-nome" placeholder="Seu Nome Completo *" oninput="validarForm()">
+                </div>
+                <div>
+                    <input type="email" id="cliente-email" placeholder="Seu E-mail *" oninput="validarForm()">
+                </div>
+                <div>
+                    <input type="tel" id="cliente-telefone" placeholder="WhatsApp / Telefone *" oninput="validarForm()">
+                </div>
+            </div>
+            <p id="aviso-bloqueio" class="alert-msg" style="display: block;">Preencha os 3 campos acima para liberar as cotações abaixo.</p>
+        </div>
+
+        <!-- ETAPA 2: Escolha do Serviço -->
+        <h2 class="section-title">2. Escolha os Serviços para Cotar</h2>
+        <div class="pilar-grid">
+            <button class="pilar-btn disabled" id="btn-solar" onclick="abrirAba('solar')">
+                <span class="pilar-icon">☀️</span> Solar / GD
+            </button>
+            <button class="pilar-btn disabled" id="btn-infra" onclick="abrirAba('infra')">
+                <span class="pilar-icon">🔌</span> Redes & Subestações
+            </button>
+            <button class="pilar-btn disabled" id="btn-bess" onclick="abrirAba('bess')">
+                <span class="pilar-icon">🔋</span> BESS (Baterias)
+            </button>
+            <button class="pilar-btn disabled" id="btn-eletro" onclick="abrirAba('eletro')">
+                <span class="pilar-icon">🚗</span> Eletropostos
+            </button>
+            <button class="pilar-btn disabled" id="btn-mercado" onclick="abrirAba('mercado')">
+                <span class="pilar-icon">📊</span> Mercado Livre
+            </button>
+            <button class="pilar-btn disabled" id="btn-auditoria" onclick="abrirAba('auditoria')">
+                <span class="pilar-icon">🔍</span> Auditoria & Eficiência
+            </button>
+        </div>
+
+        <!-- FORMULÁRIOS ESPECÍFICOS -->
+
+        <!-- Solar -->
+        <div class="cotacao-box" id="box-solar">
+            <h3>☀️ Cotação Solar (GD & Zero Grid)</h3>
+            <div class="form-grid" style="margin-top: 1rem;">
+                <select id="solar-tipo">
+                    <option value="Microinversor">Microinversor</option>
+                    <option value="Inversor String">Inversor String</option>
+                    <option value="Zero Grid">Sistema Zero Grid</option>
+                </select>
+                <input type="number" id="solar-modulos" placeholder="Nº de Módulos (Ex: 4)">
+                <input type="number" id="solar-kwh" placeholder="Consumo Mês (kWh)">
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('Solar')">Adicionar ao Pedido</button>
+        </div>
+
+        <!-- Infra -->
+        <div class="cotacao-box" id="box-infra">
+            <h3>🔌 Redes de Distribuição & Subestações</h3>
+            <div class="form-grid" style="margin-top: 1rem;">
+                <select id="infra-tipo">
+                    <option value="Projeto de Subestação">Projeto de Subestação</option>
+                    <option value="Manutenção / Reforma">Manutenção de Subestação</option>
+                    <option value="Rede Média/Alta Tensão">Rede Média/Alta Tensão</option>
+                </select>
+                <input type="text" id="infra-kva" placeholder="Potência estimada (kVA)">
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('Infraestrutura')">Adicionar ao Pedido</button>
+        </div>
+
+        <!-- BESS -->
+        <div class="cotacao-box" id="box-bess">
+            <h3>🔋 Armazenamento em Baterias (BESS)</h3>
+            <div class="form-grid" style="margin-top: 1rem;">
+                <select id="bess-aplicacao">
+                    <option value="Backup de Emergência">Backup de Emergência (Nobreak)</option>
+                    <option value="Peak Shaving (Horário de Pico)">Peak Shaving (Horário de Pico)</option>
+                    <option value="Off-Grid Total">Off-Grid Total</option>
+                </select>
+                <input type="text" id="bess-autonomia" placeholder="Autonomia desejada (Horas)">
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('BESS')">Adicionar ao Pedido</button>
+        </div>
+
+        <!-- Eletropostos -->
+        <div class="cotacao-box" id="box-eletro">
+            <h3>🚗 Estações de Recarga (Eletropostos)</h3>
+            <div class="form-grid" style="margin-top: 1rem;">
+                <select id="eletro-tipo">
+                    <option value="AC Wallbox (Residencial/Comercial)">Carregador AC Wallbox (7kW a 22kW)</option>
+                    <option value="DC Rápido (Comercial/Rodoviário)">Carregador DC Rápido (50kW+)</option>
+                </select>
+                <input type="number" id="eletro-qtd" placeholder="Quantidade de pontos">
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('Eletropostos')">Adicionar ao Pedido</button>
+        </div>
+
+        <!-- Mercado Livre -->
+        <div class="cotacao-box" id="box-mercado">
+            <h3>📊 Migração para o Mercado Livre de Energia</h3>
+            <div class="form-grid" style="margin-top: 1rem;">
+                <input type="text" id="mercado-fatura" placeholder="Valor Média da Fatura Mensal (R$)">
+                <input type="text" id="mercado-demanda" placeholder="Demanda Contratada (kW)">
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('Mercado Livre')">Adicionar ao Pedido</button>
+        </div>
+
+        <!-- Auditoria -->
+        <div class="cotacao-box" id="box-auditoria">
+            <h3>🔍 Auditoria & Eficiência Energética</h3>
+            <div class="form-grid" style="margin-top: 1rem;">
+                <select id="auditoria-foco">
+                    <option value="Auditoria Fatorial e Fatura de Energia">Análise/Auditoria de Faturas</option>
+                    <option value="Qualidade de Energia e Harmônicas">Análise de Qualidade de Energia</option>
+                    <option value="Gestão Integrada de Consumo">Plano de Eficiência Energética Industrial/Comercial</option>
+                </select>
+                <input type="text" id="auditoria-segmento" placeholder="Segmento (Ex: Indústria, Hospital, Comercial)">
+            </div>
+            <button class="btn-add" onclick="adicionarAoPedido('Auditoria e Eficiência')">Adicionar ao Pedido</button>
+        </div>
+
+        <!-- RESUMO DA COTAÇÃO -->
+        <div class="summary-card">
+            <h3>3. Resumo da Cotação Unificada</h3>
+            <ul class="summary-list" id="lista-servicos">
+                <li id="item-vazio">Nenhum serviço adicionado ainda. Escolha os botões acima.</li>
+            </ul>
+            <button class="btn-whatsapp" onclick="enviarWhatsApp()">📲 Finalizar Cotação via WhatsApp</button>
+        </div>
+
+    </div>
+
+    <script>
+        let servicosSelecionados = [];
+
+        function validarForm() {
+            const nome = document.getElementById('cliente-nome').value.trim();
+            const email = document.getElementById('cliente-email').value.trim();
+            const tel = document.getElementById('cliente-telefone').value.trim();
+
+            const liberado = nome !== '' && email !== '' && tel !== '';
+            const botoes = document.querySelectorAll('.pilar-btn');
+            const aviso = document.getElementById('aviso-bloqueio');
+
+            botoes.forEach(btn => {
+                if (liberado) {
+                    btn.classList.remove('disabled');
+                    aviso.style.display = 'none';
+                } else {
+                    btn.classList.add('disabled');
+                    aviso.style.display = 'block';
+                }
+            });
+        }
+
+        function abrirAba(pilar) {
+            const nome = document.getElementById('cliente-nome').value.trim();
+            if(!nome) {
+                alert('Por favor, preencha seus dados de contato no topo antes de escolher o serviço.');
+                return;
+            }
+
+            document.querySelectorAll('.cotacao-box').forEach(box => box.classList.remove('active'));
+            document.querySelectorAll('.pilar-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById(`box-${pilar}`).classList.add('active');
+            document.getElementById(`btn-${pilar}`).classList.add('active');
+        }
+
+        function adicionarAoPedido(categoria) {
+            let detalhe = "";
+
+            if(categoria === 'Solar') {
+                const tipo = document.getElementById('solar-tipo').value;
+                const modulos = document.getElementById('solar-modulos').value || 'Não informado';
+                const kwh = document.getElementById('solar-kwh').value || 'Não informado';
+                detalhe = `${tipo} - ${modulos} Módulos (${kwh} kWh/mês)`;
+            } else if(categoria === 'Infraestrutura') {
+                const tipo = document.getElementById('infra-tipo').value;
+                const kva = document.getElementById('infra-kva').value || 'Não informado';
+                detalhe = `${tipo} (${kva} kVA)`;
+            } else if(categoria === 'BESS') {
+                const app = document.getElementById('bess-aplicacao').value;
+                const aut = document.getElementById('bess-autonomia').value || 'Não informado';
+                detalhe = `${app} (${aut} hrs autonomia)`;
+            } else if(categoria === 'Eletropostos') {
+                const tipo = document.getElementById('eletro-tipo').value;
+                const qtd = document.getElementById('eletro-qtd').value || '1';
+                detalhe = `${tipo} - Qtd: ${qtd}`;
+            } else if(categoria === 'Mercado Livre') {
+                const fat = document.getElementById('mercado-fatura').value || 'Não informado';
+                const dem = document.getElementById('mercado-demanda').value || 'Não informado';
+                detalhe = `Fatura Média: R$${fat} / Demanda: ${dem} kW`;
+            } else if(categoria === 'Auditoria e Eficiência') {
+                const foco = document.getElementById('auditoria-foco').value;
+                const seg = document.getElementById('auditoria-segmento').value || 'Não informado';
+                detalhe = `${foco} (Segmento: ${seg})`;
+            }
+
+            servicosSelecionados.push({ categoria, detalhe });
+            atualizarResumo();
+            alert(`${categoria} adicionado com sucesso à sua cotação!`);
+        }
+
+        function atualizarResumo() {
+            const lista = document.getElementById('lista-servicos');
+            lista.innerHTML = '';
+
+            if(servicosSelecionados.length === 0) {
+                lista.innerHTML = '<li>Nenhum serviço adicionado ainda. Escolha os botões acima.</li>';
+                return;
+            }
+
+            servicosSelecionados.forEach((item, idx) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${item.categoria}:</strong> ${item.detalhe}`;
+                lista.appendChild(li);
+            });
+        }
+
+        function enviarWhatsApp() {
+            const nome = document.getElementById('cliente-nome').value.trim();
+            const email = document.getElementById('cliente-email').value.trim();
+            const tel = document.getElementById('cliente-telefone').value.trim();
+
+            if(!nome || !email || !tel) {
+                alert('Preencha seu Nome, E-mail e Telefone no topo antes de enviar.');
+                return;
+            }
+
+            if(servicosSelecionados.length === 0) {
+                alert('Adicione pelo menos um serviço ao pedido de cotação!');
+                return;
+            }
+
+            let msg = `Olá, F3F Gestão! Gostaria de solicitar uma cotação unificada.\n\n`;
+            msg += `*DADOS DO CLIENTE:*\n`;
+            msg += `• *Nome:* ${nome}\n`;
+            msg += `• *E-mail:* ${email}\n`;
+            msg += `• *WhatsApp:* ${tel}\n\n`;
+            msg += `*SERVIÇOS COTADOS:*\n`;
+
+            servicosSelecionados.forEach((item, i) => {
+                msg += `${i+1}. *${item.categoria}*: ${item.detalhe}\n`;
+            });
+
+            const numeroWhatsApp = "5562999999999"; // Substitua pelo seu WhatsApp oficial
+            const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+    </script>
+</body>
+</html>
